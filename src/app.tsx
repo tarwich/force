@@ -1,34 +1,76 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
   group: number;
+  connections: string[];
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
   value: number;
 }
 
-const sampleData: { nodes: Node[]; links: Link[] } = {
+const initialData: { nodes: Node[] } = {
   nodes: [
-    { id: 'Node 1', group: 1 },
-    { id: 'Node 2', group: 1 },
-    { id: 'Node 3', group: 2 },
-    { id: 'Node 4', group: 2 },
-    { id: 'Node 5', group: 3 },
-  ],
-  links: [
-    { source: 'Node 1', target: 'Node 2', value: 1 },
-    { source: 'Node 2', target: 'Node 3', value: 1 },
-    { source: 'Node 3', target: 'Node 4', value: 1 },
-    { source: 'Node 4', target: 'Node 5', value: 1 },
-    { source: 'Node 5', target: 'Node 1', value: 1 },
+    { id: 'Node 1', group: 1, connections: ['Node 2', 'Node 5'] },
+    { id: 'Node 2', group: 1, connections: ['Node 3'] },
+    { id: 'Node 3', group: 2, connections: ['Node 4'] },
+    { id: 'Node 4', group: 2, connections: ['Node 5'] },
+    { id: 'Node 5', group: 3, connections: ['Node 1'] },
   ],
 };
 
 export default function App() {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [graphData, setGraphData] = useState(initialData);
+
+  // Helper function to convert nodes and their connections to links for D3
+  const getLinksFromNodes = (nodes: Node[]): Link[] => {
+    const links: Link[] = [];
+    nodes.forEach((node) => {
+      node.connections.forEach((targetId) => {
+        // Only add the link if we haven't added it in reverse order
+        if (node.id < targetId) {
+          links.push({ source: node.id, target: targetId, value: 1 });
+        }
+      });
+    });
+    return links;
+  };
+
+  const toggleConnection = (source: string, target: string) => {
+    setGraphData((state) => {
+      const sourceNode = state.nodes.find((n) => n.id === source);
+      const targetNode = state.nodes.find((n) => n.id === target);
+
+      if (sourceNode && targetNode) {
+        if (
+          sourceNode.connections.includes(target) ||
+          targetNode.connections.includes(source)
+        ) {
+          if (sourceNode.connections.includes(target)) {
+            // Remove outgoing connection
+            sourceNode.connections = sourceNode.connections.filter(
+              (id) => id !== target
+            );
+          }
+          if (targetNode.connections.includes(source)) {
+            // Remove incoming connection (reverse direction)
+            targetNode.connections = targetNode.connections.filter(
+              (id) => id !== source
+            );
+          }
+        } else {
+          // Add new outgoing connection
+          sourceNode.connections = sourceNode.connections.concat(target);
+          targetNode.connections = targetNode.connections.concat(source);
+        }
+      }
+
+      return { ...state };
+    });
+  };
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -39,13 +81,15 @@ export default function App() {
     const width = 800;
     const height = 600;
 
+    const links = getLinksFromNodes(graphData.nodes);
+
     // Create the simulation
     const simulation = d3
-      .forceSimulation(sampleData.nodes)
+      .forceSimulation(graphData.nodes)
       .force(
         'link',
         d3
-          .forceLink<Node, Link>(sampleData.links)
+          .forceLink<Node, Link>(links)
           .id((d) => d.id)
           .distance(150)
           .strength(1)
@@ -68,7 +112,7 @@ export default function App() {
     const link = svg
       .append('g')
       .selectAll('line')
-      .data(sampleData.links)
+      .data(links)
       .join('line')
       .attr('stroke', '#999')
       .attr('stroke-opacity', 0.6)
@@ -78,7 +122,7 @@ export default function App() {
     const node = svg
       .append('g')
       .selectAll('circle')
-      .data(sampleData.nodes)
+      .data(graphData.nodes)
       .join('circle')
       .attr('r', 25)
       .attr('fill', (d) => d3.schemeCategory10[d.group % 10])
@@ -88,7 +132,7 @@ export default function App() {
     const labels = svg
       .append('g')
       .selectAll('text')
-      .data(sampleData.nodes)
+      .data(graphData.nodes)
       .join('text')
       .text((d) => d.id)
       .attr('text-anchor', 'middle')
@@ -109,7 +153,7 @@ export default function App() {
 
       labels.attr('x', (d) => d.x ?? 0).attr('y', (d) => d.y ?? 0);
     });
-  }, []);
+  }, [graphData]);
 
   function drag(simulation: d3.Simulation<Node, undefined>) {
     function dragstarted(event: d3.D3DragEvent<SVGCircleElement, Node, Node>) {
@@ -149,7 +193,7 @@ export default function App() {
             <thead>
               <tr className="border-b border-border">
                 <th className="px-4 py-2 text-left">Node</th>
-                {sampleData.nodes.map((node) => (
+                {graphData.nodes.map((node) => (
                   <th key={node.id} className="px-4 py-2 text-center">
                     <div className="flex flex-col items-center">
                       <span
@@ -165,7 +209,7 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {sampleData.nodes.map((rowNode) => (
+              {graphData.nodes.map((rowNode) => (
                 <tr key={rowNode.id} className="border-b border-border">
                   <td className="px-4 py-2">
                     <div className="flex items-center">
@@ -179,21 +223,30 @@ export default function App() {
                       {rowNode.id}
                     </div>
                   </td>
-                  {sampleData.nodes.map((colNode) => {
-                    const hasConnection = sampleData.links.some(
-                      (link) =>
-                        (link.source === rowNode.id &&
-                          link.target === colNode.id) ||
-                        (link.source === colNode.id &&
-                          link.target === rowNode.id)
-                    );
+                  {graphData.nodes.map((colNode) => {
+                    const isSource = rowNode.connections.includes(colNode.id);
+                    const isTarget = colNode.connections.includes(rowNode.id);
+
                     return (
-                      <td key={colNode.id} className="px-4 py-2 text-center">
-                        {hasConnection ? (
-                          <div className="w-4 h-4 bg-foreground rounded-full mx-auto" />
-                        ) : (
-                          <div className="w-4 h-4 border border-muted-foreground rounded-full mx-auto" />
-                        )}
+                      <td
+                        key={colNode.id}
+                        className="px-4 py-2 text-center"
+                        onClick={() =>
+                          rowNode.id !== colNode.id &&
+                          toggleConnection(rowNode.id, colNode.id)
+                        }
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full mx-auto cursor-pointer transition-colors ${
+                            rowNode.id === colNode.id
+                              ? 'bg-muted'
+                              : isSource
+                              ? 'bg-blue-500 hover:bg-blue-600'
+                              : isTarget
+                              ? 'bg-gray-500 hover:bg-gray-600'
+                              : 'border border-muted-foreground hover:border-primary'
+                          }`}
+                        />
                       </td>
                     );
                   })}
