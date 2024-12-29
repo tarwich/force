@@ -1,8 +1,10 @@
 import * as d3 from 'd3';
+import { nanoid } from 'nanoid';
 import { useEffect, useRef, useState } from 'react';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
+  name: string;
   group: number;
   connections: string[];
 }
@@ -13,13 +15,34 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 
 const initialData: { nodes: Node[] } = {
   nodes: [
-    { id: 'Node 1', group: 1, connections: ['Node 2', 'Node 5'] },
-    { id: 'Node 2', group: 1, connections: ['Node 3'] },
-    { id: 'Node 3', group: 2, connections: ['Node 4'] },
-    { id: 'Node 4', group: 2, connections: ['Node 5'] },
-    { id: 'Node 5', group: 3, connections: ['Node 1'] },
+    { id: nanoid(), name: 'Kitchen', group: 1, connections: [] },
+    { id: nanoid(), name: 'Living Room', group: 1, connections: [] },
+    { id: nanoid(), name: 'Bedroom', group: 2, connections: [] },
+    { id: nanoid(), name: 'Bathroom', group: 2, connections: [] },
+    { id: nanoid(), name: 'Dining Room', group: 3, connections: [] },
   ],
 };
+
+initialData.nodes[0].connections = [
+  initialData.nodes[1].id,
+  initialData.nodes[4].id,
+];
+initialData.nodes[1].connections = [
+  initialData.nodes[0].id,
+  initialData.nodes[2].id,
+];
+initialData.nodes[2].connections = [
+  initialData.nodes[1].id,
+  initialData.nodes[3].id,
+];
+initialData.nodes[3].connections = [
+  initialData.nodes[2].id,
+  initialData.nodes[4].id,
+];
+initialData.nodes[4].connections = [
+  initialData.nodes[0].id,
+  initialData.nodes[3].id,
+];
 
 export default function App() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -134,7 +157,7 @@ export default function App() {
       .selectAll('text')
       .data(graphData.nodes)
       .join('text')
-      .text((d) => d.id)
+      .text((d) => d.name)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .attr('font-size', '12px')
@@ -202,7 +225,7 @@ export default function App() {
                           backgroundColor: d3.schemeCategory10[node.group % 10],
                         }}
                       ></span>
-                      {node.id}
+                      {node.name}
                     </div>
                   </th>
                 ))}
@@ -220,7 +243,25 @@ export default function App() {
                             d3.schemeCategory10[rowNode.group % 10],
                         }}
                       ></span>
-                      {rowNode.id}
+                      <input
+                        type="text"
+                        value={rowNode.name}
+                        onChange={(e) => {
+                          const newName = e.target.value;
+                          setGraphData((state) => {
+                            // Update the node's ID
+                            const node = state.nodes.find(
+                              (n) => n.id === rowNode.id
+                            );
+                            if (node) {
+                              node.name = newName;
+                            }
+
+                            return { ...state };
+                          });
+                        }}
+                        className="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded"
+                      />
                     </div>
                   </td>
                   {graphData.nodes.map((colNode) => {
