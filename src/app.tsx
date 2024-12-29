@@ -72,7 +72,7 @@ export default function App() {
       .join('line')
       .attr('stroke', '#999')
       .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', (d) => Math.sqrt(d.value));
+      .attr('stroke-width', 2);
 
     // Create the nodes
     const node = svg
@@ -142,6 +142,68 @@ export default function App() {
         <h1 className="text-4xl font-bold mb-8 text-foreground">
           Force-Directed Graph
         </h1>
+
+        {/* Node Matrix */}
+        <div className="mb-8 overflow-x-auto bg-card rounded-lg shadow-lg">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="px-4 py-2 text-left">Node</th>
+                {sampleData.nodes.map((node) => (
+                  <th key={node.id} className="px-4 py-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <span
+                        className="inline-block w-4 h-4 rounded-full mb-1"
+                        style={{
+                          backgroundColor: d3.schemeCategory10[node.group % 10],
+                        }}
+                      ></span>
+                      {node.id}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sampleData.nodes.map((rowNode) => (
+                <tr key={rowNode.id} className="border-b border-border">
+                  <td className="px-4 py-2">
+                    <div className="flex items-center">
+                      <span
+                        className="inline-block w-4 h-4 rounded-full mr-2"
+                        style={{
+                          backgroundColor:
+                            d3.schemeCategory10[rowNode.group % 10],
+                        }}
+                      ></span>
+                      {rowNode.id}
+                    </div>
+                  </td>
+                  {sampleData.nodes.map((colNode) => {
+                    const hasConnection = sampleData.links.some(
+                      (link) =>
+                        (link.source === rowNode.id &&
+                          link.target === colNode.id) ||
+                        (link.source === colNode.id &&
+                          link.target === rowNode.id)
+                    );
+                    return (
+                      <td key={colNode.id} className="px-4 py-2 text-center">
+                        {hasConnection ? (
+                          <div className="w-4 h-4 bg-foreground rounded-full mx-auto" />
+                        ) : (
+                          <div className="w-4 h-4 border border-muted-foreground rounded-full mx-auto" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Graph */}
         <div className="bg-card rounded-lg shadow-lg p-4">
           <svg
             ref={svgRef}
