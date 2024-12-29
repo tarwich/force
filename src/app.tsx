@@ -47,10 +47,14 @@ export default function App() {
         d3
           .forceLink<Node, Link>(sampleData.links)
           .id((d) => d.id)
-          .distance(100)
+          .distance(150)
+          .strength(1)
       )
-      .force('charge', d3.forceManyBody<Node>().strength(-200))
-      .force('center', d3.forceCenter<Node>(width / 2, height / 2));
+      .force('charge', d3.forceManyBody<Node>().strength(-1000))
+      .force('center', d3.forceCenter<Node>(width / 2, height / 2))
+      .force('collision', d3.forceCollide<Node>().radius(50))
+      .force('x', d3.forceX<Node>(width / 2).strength(0.1))
+      .force('y', d3.forceY<Node>(height / 2).strength(0.1));
 
     // Create the SVG container
     const svg = d3
@@ -76,7 +80,7 @@ export default function App() {
       .selectAll('circle')
       .data(sampleData.nodes)
       .join('circle')
-      .attr('r', 5)
+      .attr('r', 25)
       .attr('fill', (d) => d3.schemeCategory10[d.group % 10])
       .call(drag(simulation) as any);
 
@@ -87,9 +91,11 @@ export default function App() {
       .data(sampleData.nodes)
       .join('text')
       .text((d) => d.id)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
       .attr('font-size', '12px')
-      .attr('dx', 8)
-      .attr('dy', 4);
+      .attr('fill', 'white')
+      .attr('pointer-events', 'none');
 
     // Update positions on each tick
     simulation.on('tick', () => {
