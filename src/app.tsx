@@ -9,6 +9,7 @@ interface Node extends d3.SimulationNodeDatum {
   connections: string[];
   labelWidth?: number;
   labelHeight?: number;
+  size: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -17,11 +18,11 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 
 const initialData: { nodes: Node[] } = {
   nodes: [
-    { id: nanoid(), name: 'Kitchen', group: 1, connections: [] },
-    { id: nanoid(), name: 'Living Room', group: 1, connections: [] },
-    { id: nanoid(), name: 'Bedroom', group: 2, connections: [] },
-    { id: nanoid(), name: 'Bathroom', group: 2, connections: [] },
-    { id: nanoid(), name: 'Dining Room', group: 3, connections: [] },
+    { id: nanoid(), name: 'Kitchen', group: 1, connections: [], size: 25 },
+    { id: nanoid(), name: 'Living Room', group: 1, connections: [], size: 25 },
+    { id: nanoid(), name: 'Bedroom', group: 2, connections: [], size: 25 },
+    { id: nanoid(), name: 'Bathroom', group: 2, connections: [], size: 25 },
+    { id: nanoid(), name: 'Dining Room', group: 3, connections: [], size: 25 },
   ],
 };
 
@@ -57,6 +58,7 @@ export default function App() {
         name: `Node ${state.nodes.length + 1}`,
         group: Math.floor(Math.random() * 3) + 1,
         connections: [],
+        size: 25,
       };
       return {
         ...state,
@@ -164,7 +166,7 @@ export default function App() {
       .selectAll('circle')
       .data(graphData.nodes)
       .join('circle')
-      .attr('r', 25)
+      .attr('r', (d) => d.size)
       .attr('fill', (d) => d3.schemeCategory10[d.group % 10])
       .call(drag(simulation) as any);
 
@@ -289,9 +291,9 @@ export default function App() {
               {graphData.nodes.map((rowNode) => (
                 <tr key={rowNode.id} className="border-b border-border">
                   <td className="px-4 py-2">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <span
-                        className="inline-block w-4 h-4 rounded-full mr-2"
+                        className="inline-block w-4 h-4 rounded-full"
                         style={{
                           backgroundColor:
                             d3.schemeCategory10[rowNode.group % 10],
@@ -303,18 +305,35 @@ export default function App() {
                         onChange={(e) => {
                           const newName = e.target.value;
                           setGraphData((state) => {
-                            // Update the node's ID
                             const node = state.nodes.find(
                               (n) => n.id === rowNode.id
                             );
                             if (node) {
                               node.name = newName;
                             }
-
                             return { ...state };
                           });
                         }}
                         className="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary px-1 rounded"
+                      />
+                      <input
+                        type="number"
+                        value={rowNode.size}
+                        min="5"
+                        max="50"
+                        onChange={(e) => {
+                          const newSize = Number(e.target.value);
+                          setGraphData((state) => {
+                            const node = state.nodes.find(
+                              (n) => n.id === rowNode.id
+                            );
+                            if (node) {
+                              node.size = newSize;
+                            }
+                            return { ...state };
+                          });
+                        }}
+                        className="w-20 bg-transparent border border-input rounded px-2 py-1"
                       />
                     </div>
                   </td>
