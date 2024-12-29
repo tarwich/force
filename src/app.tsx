@@ -7,6 +7,8 @@ interface Node extends d3.SimulationNodeDatum {
   name: string;
   group: number;
   connections: string[];
+  labelWidth?: number;
+  labelHeight?: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -166,6 +168,17 @@ export default function App() {
       .attr('fill', (d) => d3.schemeCategory10[d.group % 10])
       .call(drag(simulation) as any);
 
+    // Add background rectangles for text labels
+    const labelBackgrounds = svg
+      .append('g')
+      .selectAll('rect')
+      .data(graphData.nodes)
+      .join('rect')
+      .attr('fill', 'rgba(0, 0, 0, 0.5)')
+      .attr('rx', 3)
+      .attr('ry', 3)
+      .attr('pointer-events', 'none');
+
     // Add labels to the nodes
     const labels = svg
       .append('g')
@@ -179,6 +192,20 @@ export default function App() {
       .attr('fill', 'white')
       .attr('pointer-events', 'none');
 
+    // Size the background rectangles based on text size
+    labels.each(function (d) {
+      const bbox = (this as SVGTextElement).getBBox();
+      const padding = 4;
+      d.labelWidth = bbox.width + padding * 2;
+      d.labelHeight = bbox.height + padding * 2;
+    });
+
+    labelBackgrounds
+      .attr('width', (d: any) => d.labelWidth)
+      .attr('height', (d: any) => d.labelHeight)
+      .attr('x', (d: any) => (d.x ?? 0) - d.labelWidth / 2)
+      .attr('y', (d: any) => (d.y ?? 0) - d.labelHeight / 2);
+
     // Update positions on each tick
     simulation.on('tick', () => {
       link
@@ -188,6 +215,10 @@ export default function App() {
         .attr('y2', (d) => (d.target as Node).y ?? 0);
 
       node.attr('cx', (d) => d.x ?? 0).attr('cy', (d) => d.y ?? 0);
+
+      labelBackgrounds
+        .attr('x', (d: any) => (d.x ?? 0) - d.labelWidth / 2)
+        .attr('y', (d: any) => (d.y ?? 0) - d.labelHeight / 2);
 
       labels.attr('x', (d) => d.x ?? 0).attr('y', (d) => d.y ?? 0);
     });
