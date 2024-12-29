@@ -335,6 +335,24 @@ export default function App() {
                         }}
                         className="w-20 bg-transparent border border-input rounded px-2 py-1"
                       />
+                      <input
+                        type="number"
+                        value={rowNode.group}
+                        min="1"
+                        onChange={(e) => {
+                          const newGroup = Number(e.target.value);
+                          setGraphData((state) => {
+                            const node = state.nodes.find(
+                              (n) => n.id === rowNode.id
+                            );
+                            if (node) {
+                              node.group = newGroup;
+                            }
+                            return { ...state };
+                          });
+                        }}
+                        className="w-20 bg-transparent border border-input rounded px-2 py-1"
+                      />
                     </div>
                   </td>
                   {graphData.nodes.map((colNode) => {
