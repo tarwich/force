@@ -48,6 +48,21 @@ export default function App() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [graphData, setGraphData] = useState(initialData);
 
+  const addNewNode = () => {
+    setGraphData((state) => {
+      const newNode: Node = {
+        id: nanoid(),
+        name: `Node ${state.nodes.length + 1}`,
+        group: Math.floor(Math.random() * 3) + 1,
+        connections: [],
+      };
+      return {
+        ...state,
+        nodes: [...state.nodes, newNode],
+      };
+    });
+  };
+
   // Helper function to convert nodes and their connections to links for D3
   const getLinksFromNodes = (nodes: Node[]): Link[] => {
     const links: Link[] = [];
@@ -206,9 +221,17 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="container mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-foreground">
-          Force-Directed Graph
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground">
+            Force-Directed Graph
+          </h1>
+          <button
+            onClick={addNewNode}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Add Node
+          </button>
+        </div>
 
         {/* Node Matrix */}
         <div className="mb-8 overflow-x-auto bg-card rounded-lg shadow-lg">
